@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "command": "java",
+      "args": [
+        "-jar",
+        "D:\\projects\\mysql-mcp\\target\\mysql-mcp-server-1.0.0.jar"
+      ],
+      "env": {
+        "MYSQL_URL": "jdbc:mysql://localhost:3306/test",
+        "MYSQL_USERNAME": "root",
+        "MYSQL_PASSWORD": "root"
+      }
+    }
+  }
+}
+
