@@ -1,21 +1,20 @@
 package com.mysqlmcp.server;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mysqlmcp.database.DatabaseManager;
 import com.mysqlmcp.tools.MCPToolHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * MCP服务器主类
@@ -38,20 +37,26 @@ public class MCPServer {
         System.setProperty("user.language", "en");
         System.setProperty("user.country", "US");
         
+        // 配置 SLF4J Simple Logger（如果配置文件不存在时使用）
+        if (System.getProperty("org.slf4j.simpleLogger.defaultLogLevel") == null) {
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.showDateTime") == null) {
+            System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.dateTimeFormat") == null) {
+            System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss.SSS");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.showShortLogName") == null) {
+            System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
+        }
+        
         MCPServer server = new MCPServer();
         server.start();
     }
 
     public void start() {
-        logger.info("MySQL MCP Server starting...");
-        
-        // 使用 stderr 进行调试输出（不会干扰 stdout 的 JSON-RPC 通信）
-        PrintStream err;
-        try {
-            err = new PrintStream(System.err, true, StandardCharsets.UTF_8.name());
-        } catch (UnsupportedEncodingException e) {
-            err = System.err; // Fallback to default
-        }
+        logger.info("[LOG-INFO] MySQL MCP Server starting...");
         
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(System.in, StandardCharsets.UTF_8));
@@ -73,8 +78,9 @@ public class MCPServer {
                     boolean isNotification = (id == null || 
                         (request.has("id") && request.get("id").isJsonNull()));
                     
-                    err.println("[DEBUG] Received " + (isNotification ? "notification" : "request") + 
-                               ": method=" + method + ", id=" + id);
+                    String requestJson = gson.toJson(request);
+                    logger.info("[LOG-INFO] Received {}: {}", 
+                               isNotification ? "notification" : "request", requestJson);
                     
                     // 如果是通知，只处理不响应
                     if (isNotification) {
@@ -84,7 +90,7 @@ public class MCPServer {
                         JsonObject response = handleRequest(request);
                         String responseJson = gson.toJson(response);
                         
-                        err.println("[DEBUG] Sending response: " + responseJson);
+                        logger.info("[LOG-INFO] Sending response: {}", responseJson);
                         // 立即发送响应，确保客户端能收到
                         writer.print(responseJson);
                         writer.print('\n');
@@ -92,21 +98,8 @@ public class MCPServer {
                         // 强制刷新 System.out
                         System.out.flush();
                     }
-                    
-                    // 注意：根据 MCP 协议，initialized 通知是可选的
-                    // 某些客户端可能不需要或不支持此通知
-                    // 如果客户端仍然无法识别服务器，可以尝试不发送此通知
-                    // if ("initialize".equals(method)) {
-                    //     JsonObject initializedNotification = createNotification("initialized", null);
-                    //     String notificationJson = gson.toJson(initializedNotification);
-                    //     err.println("[DEBUG] Sending initialized notification: " + notificationJson);
-                    //     writer.println(notificationJson);
-                    //     writer.flush();
-                    // }
                 } catch (Exception e) {
                     logger.error("Error processing request", e);
-                    err.println("[DEBUG] Error: " + e.getMessage());
-                    e.printStackTrace(err);
                     
                     Object requestId = null;
                     try {
@@ -121,7 +114,7 @@ public class MCPServer {
                     }
                     JsonObject errorResponse = createErrorResponse(requestId, -32603, "Internal error: " + e.getMessage());
                     String errorJson = gson.toJson(errorResponse);
-                    err.println("[DEBUG] Sending error response: " + errorJson);
+                    logger.info("[LOG-INFO] Sending error response: {}", errorJson);
                     writer.println(errorJson);
                     writer.flush();
                 }
@@ -143,7 +136,8 @@ public class MCPServer {
         // 处理各种通知
         switch (method) {
             case "notifications/initialized":
-                logger.info("Received initialized notification from client");
+                String notificationJson = gson.toJson(notification);
+                logger.info("[LOG-INFO] Received initialized notification: {}", notificationJson);
                 // 客户端已初始化完成，不需要响应
                 break;
             default:
@@ -175,7 +169,8 @@ public class MCPServer {
     }
 
     private JsonObject handleInitialize(JsonObject request, Object id) {
-        logger.info("Received initialize request");
+        String requestJson = gson.toJson(request);
+        logger.info("[LOG-INFO] Received initialize request: {}", requestJson);
         JsonObject result = new JsonObject();
         result.addProperty("protocolVersion", "2024-11-05");
         result.addProperty("serverVersion", "1.0.0");
@@ -197,8 +192,12 @@ public class MCPServer {
     }
 
     private JsonObject handleToolsList(JsonObject request, Object id) {
-        logger.info("Received tools/list request");
-        return createSuccessResponse(id, toolHandler.getToolsList());
+        String requestJson = gson.toJson(request);
+        logger.info("[LOG-INFO] Received tools/list request: {}", requestJson);
+        JsonObject toolsList = toolHandler.getToolsList();
+        String responseJson = gson.toJson(createSuccessResponse(id, toolsList));
+        logger.info("[LOG-INFO] Sending tools/list response: {}", responseJson);
+        return createSuccessResponse(id, toolsList);
     }
 
     private JsonObject handleToolsCall(JsonObject request, Object id) {
@@ -216,14 +215,22 @@ public class MCPServer {
             ? params.getAsJsonObject("arguments") 
             : new JsonObject();
 
-        logger.info("Calling tool: {}", toolName);
+        String requestJson = gson.toJson(request);
+        logger.info("[LOG-INFO] Received tools/call request: {}", requestJson);
+        logger.info("[LOG-INFO] Calling tool: {}, arguments: {}", toolName, gson.toJson(arguments));
         
         try {
             JsonObject result = toolHandler.callTool(toolName, arguments);
-            return createSuccessResponse(id, result);
+            JsonObject response = createSuccessResponse(id, result);
+            String responseJson = gson.toJson(response);
+            logger.info("[LOG-INFO] Tool call success, sending response: {}", responseJson);
+            return response;
         } catch (Exception e) {
             logger.error("Error executing tool: {}", toolName, e);
-            return createErrorResponse(id, -32603, "Error executing tool: " + e.getMessage());
+            JsonObject errorResponse = createErrorResponse(id, -32603, "Error executing tool: " + e.getMessage());
+            String errorJson = gson.toJson(errorResponse);
+            logger.info("[LOG-INFO] Tool call failed, sending error response: {}", errorJson);
+            return errorResponse;
         }
     }
 

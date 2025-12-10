@@ -31,59 +31,59 @@ public class MCPToolHandler {
         JsonObject result = new JsonObject();
         JsonArray tools = new JsonArray();
 
-        // 查询工具
+        // Query tool
         tools.add(createToolDefinition(
             "execute_query",
-            "执行SQL查询语句",
-            "执行SELECT查询并返回结果",
+            "Execute SQL query",
+            "Execute SELECT query and return results",
             new String[]{"sql"}
         ));
 
-        // 更新工具
+        // Update tool
         tools.add(createToolDefinition(
             "execute_update",
-            "执行SQL更新语句",
-            "执行INSERT、UPDATE或DELETE语句",
+            "Execute SQL update",
+            "Execute INSERT, UPDATE or DELETE statement",
             new String[]{"sql"}
         ));
 
-        // 插入工具
+        // Insert tool
         tools.add(createToolDefinition(
             "insert_data",
-            "插入数据",
-            "向指定表插入数据",
+            "Insert data",
+            "Insert data into specified table",
             new String[]{"table", "data"}
         ));
 
-        // 更新数据工具
+        // Update data tool
         tools.add(createToolDefinition(
             "update_data",
-            "更新数据",
-            "更新指定表中的数据",
+            "Update data",
+            "Update data in specified table",
             new String[]{"table", "data", "where"}
         ));
 
-        // 删除数据工具
+        // Delete data tool
         tools.add(createToolDefinition(
             "delete_data",
-            "删除数据",
-            "从指定表中删除数据",
+            "Delete data",
+            "Delete data from specified table",
             new String[]{"table", "where"}
         ));
 
-        // 获取表列表工具
+        // List tables tool
         tools.add(createToolDefinition(
             "list_tables",
-            "列出所有表",
-            "获取数据库中的所有表名",
+            "List all tables",
+            "Get all table names in the database",
             new String[]{}
         ));
 
-        // 获取表结构工具
+        // Describe table tool
         tools.add(createToolDefinition(
             "describe_table",
-            "描述表结构",
-            "获取指定表的列信息",
+            "Describe table structure",
+            "Get column information for specified table",
             new String[]{"table"}
         ));
 
@@ -111,19 +111,19 @@ public class MCPToolHandler {
             switch (param) {
                 case "sql":
                     paramSchema.addProperty("type", "string");
-                    paramSchema.addProperty("description", "SQL语句");
+                    paramSchema.addProperty("description", "SQL statement");
                     break;
                 case "table":
                     paramSchema.addProperty("type", "string");
-                    paramSchema.addProperty("description", "表名");
+                    paramSchema.addProperty("description", "Table name");
                     break;
                 case "data":
                     paramSchema.addProperty("type", "object");
-                    paramSchema.addProperty("description", "要插入或更新的数据（键值对）");
+                    paramSchema.addProperty("description", "Data to insert or update (key-value pairs)");
                     break;
                 case "where":
                     paramSchema.addProperty("type", "string");
-                    paramSchema.addProperty("description", "WHERE条件（例如：id=1）");
+                    paramSchema.addProperty("description", "WHERE condition (e.g., id=1)");
                     break;
             }
             properties.add(param, paramSchema);
@@ -172,6 +172,7 @@ public class MCPToolHandler {
         List<Map<String, Object>> results = databaseManager.executeQuery(sql);
         
         JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
         JsonArray rows = new JsonArray();
         
         for (Map<String, Object> row : results) {
@@ -191,6 +192,14 @@ public class MCPToolHandler {
             rows.add(rowObj);
         }
         
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        textContent.addProperty("text", "Query returned " + rows.size() + " row(s)");
+        content.add(textContent);
+        result.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
         result.add("rows", rows);
         result.addProperty("count", rows.size());
         return result;
@@ -205,6 +214,16 @@ public class MCPToolHandler {
         int affectedRows = databaseManager.executeUpdate(sql);
         
         JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
+        
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        textContent.addProperty("text", "Update completed. Affected rows: " + affectedRows);
+        content.add(textContent);
+        result.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
         result.addProperty("affectedRows", affectedRows);
         return result;
     }
@@ -243,6 +262,20 @@ public class MCPToolHandler {
         Map<String, Object> result = databaseManager.executeUpdateWithKeys(sql.toString());
         
         JsonObject jsonResult = new JsonObject();
+        JsonArray content = new JsonArray();
+        
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        StringBuilder text = new StringBuilder("Insert completed. Affected rows: " + result.get("affectedRows"));
+        if (result.containsKey("generatedKey")) {
+            text.append(", Generated key: ").append(result.get("generatedKey"));
+        }
+        textContent.addProperty("text", text.toString());
+        content.add(textContent);
+        jsonResult.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
         jsonResult.addProperty("affectedRows", (Integer) result.get("affectedRows"));
         if (result.containsKey("generatedKey")) {
             jsonResult.addProperty("generatedKey", result.get("generatedKey").toString());
@@ -283,6 +316,16 @@ public class MCPToolHandler {
         int affectedRows = databaseManager.executeUpdate(sql.toString());
         
         JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
+        
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        textContent.addProperty("text", "Update completed. Affected rows: " + affectedRows);
+        content.add(textContent);
+        result.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
         result.addProperty("affectedRows", affectedRows);
         return result;
     }
@@ -299,6 +342,16 @@ public class MCPToolHandler {
         int affectedRows = databaseManager.executeUpdate(sql);
         
         JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
+        
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        textContent.addProperty("text", "Delete completed. Affected rows: " + affectedRows);
+        content.add(textContent);
+        result.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
         result.addProperty("affectedRows", affectedRows);
         return result;
     }
@@ -306,11 +359,26 @@ public class MCPToolHandler {
     private JsonObject handleListTables(JsonObject arguments) throws SQLException {
         List<String> tables = databaseManager.getTables();
         
+        // 按照 MCP 协议规范，工具调用响应应该包含 content 数组
         JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
+        
+        // 创建文本内容项
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        
+        // 将表列表格式化为文本
+        StringBuilder text = new StringBuilder("Database tables (" + tables.size() + "):\n");
         JsonArray tableArray = new JsonArray();
         for (String table : tables) {
             tableArray.add(table);
+            text.append("- ").append(table).append("\n");
         }
+        textContent.addProperty("text", text.toString());
+        content.add(textContent);
+        
+        result.add("content", content);
+        // 同时保留原始数据格式以便兼容
         result.add("tables", tableArray);
         result.addProperty("count", tables.size());
         return result;
@@ -325,8 +393,10 @@ public class MCPToolHandler {
         List<Map<String, Object>> columns = databaseManager.getTableColumns(table);
         
         JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
         JsonArray columnArray = new JsonArray();
         
+        StringBuilder text = new StringBuilder("Table structure for '" + table + "' (" + columns.size() + " columns):\n");
         for (Map<String, Object> column : columns) {
             JsonObject colObj = new JsonObject();
             colObj.addProperty("name", (String) column.get("name"));
@@ -337,8 +407,31 @@ public class MCPToolHandler {
                 colObj.addProperty("defaultValue", column.get("defaultValue").toString());
             }
             columnArray.add(colObj);
+            
+            // 添加到文本描述
+            text.append("- ").append(column.get("name"))
+                .append(" (").append(column.get("type"));
+            if (column.get("size") != null) {
+                text.append("(").append(column.get("size")).append(")");
+            }
+            text.append(")");
+            if (!(Boolean) column.get("nullable")) {
+                text.append(" NOT NULL");
+            }
+            if (column.get("defaultValue") != null) {
+                text.append(" DEFAULT ").append(column.get("defaultValue"));
+            }
+            text.append("\n");
         }
         
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        textContent.addProperty("text", text.toString());
+        content.add(textContent);
+        result.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
         result.add("columns", columnArray);
         return result;
     }
