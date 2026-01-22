@@ -9,8 +9,9 @@
 - ✅ 插入数据到指定表
 - ✅ 更新表中的数据
 - ✅ 删除表中的数据
-- ✅ 列出所有数据库表
+- ✅ 列出所有数据库表（支持指定数据库）
 - ✅ 获取表结构信息
+- ✅ 获取表的完整 CREATE TABLE DDL 语句
 - ✅ 完全符合 MCP 协议 2024-11-05 规范
 - ✅ 使用 SLF4J 进行日志记录
 - ✅ 支持 UTF-8 编码
@@ -111,33 +112,12 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 **示例：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "execute_query",
-    "arguments": {
-      "sql": "SELECT * FROM users LIMIT 10"
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"execute_query","arguments":{"sql":"SELECT * FROM users LIMIT 10"}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Query returned 10 row(s)"
-      }
-    ],
-    "rows": [...],
-    "count": 10
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Query returned 10 row(s)"}],"rows":[],"count":10}}
 ```
 
 ### 2. execute_update
@@ -149,32 +129,12 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 **示例：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "execute_update",
-    "arguments": {
-      "sql": "UPDATE users SET status = 'active' WHERE id = 1"
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"execute_update","arguments":{"sql":"UPDATE users SET status = 'active' WHERE id = 1"}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Update completed. Affected rows: 1"
-      }
-    ],
-    "affectedRows": 1
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Update completed. Affected rows: 1"}],"affectedRows":1}}
 ```
 
 ### 3. insert_data
@@ -187,38 +147,12 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 **示例：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "insert_data",
-    "arguments": {
-      "table": "users",
-      "data": {
-        "name": "John Doe",
-        "email": "john@example.com",
-        "age": 30
-      }
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"insert_data","arguments":{"table":"users","data":{"name":"John Doe","email":"john@example.com","age":30}}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Insert completed. Affected rows: 1, Generated key: 123"
-      }
-    ],
-    "affectedRows": 1,
-    "generatedKey": "123"
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Insert completed. Affected rows: 1, Generated key: 123"}],"affectedRows":1,"generatedKey":"123"}}
 ```
 
 ### 4. update_data
@@ -232,36 +166,12 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 **示例：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "update_data",
-    "arguments": {
-      "table": "users",
-      "data": {
-        "email": "newemail@example.com"
-      },
-      "where": "id = 1"
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"update_data","arguments":{"table":"users","data":{"email":"newemail@example.com"},"where":"id = 1"}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Update completed. Affected rows: 1"
-      }
-    ],
-    "affectedRows": 1
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Update completed. Affected rows: 1"}],"affectedRows":1}}
 ```
 
 ### 5. delete_data
@@ -274,68 +184,34 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 **示例：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "delete_data",
-    "arguments": {
-      "table": "users",
-      "where": "id = 1"
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"delete_data","arguments":{"table":"users","where":"id = 1"}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Delete completed. Affected rows: 1"
-      }
-    ],
-    "affectedRows": 1
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Delete completed. Affected rows: 1"}],"affectedRows":1}}
 ```
 
 ### 6. list_tables
 
 获取数据库中的所有表名。
 
-**参数：** 无
+**参数：**
+- `database` (string, 可选): 数据库名，如果不指定则使用当前连接的数据库
 
-**示例：**
+**示例（查询当前数据库）：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "list_tables",
-    "arguments": {}
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_tables","arguments":{}}}
+```
+
+**示例（查询指定数据库）：**
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_tables","arguments":{"database":"test"}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Database tables (10):\n- users\n- orders\n..."
-      }
-    ],
-    "tables": ["users", "orders", ...],
-    "count": 10
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Database 'test' tables (10):\n- users\n- orders\n..."}],"tables":["users","orders"],"count":10,"database":"test"}}
 ```
 
 ### 7. describe_table
@@ -347,40 +223,35 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 **示例：**
 ```json
-{
-  "method": "tools/call",
-  "params": {
-    "name": "describe_table",
-    "arguments": {
-      "table": "users"
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"describe_table","arguments":{"table":"users"}}}
 ```
 
 **响应：**
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Table structure for 'users' (5 columns):\n- id (INT(10)) NOT NULL\n- name (VARCHAR(50))\n..."
-      }
-    ],
-    "columns": [
-      {
-        "name": "id",
-        "type": "INT",
-        "size": 10,
-        "nullable": false
-      },
-      ...
-    ]
-  }
-}
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"Table structure for 'users' (5 columns):\n- id (INT(10)) NOT NULL\n- name (VARCHAR(50))\n..."}],"columns":[{"name":"id","type":"INT","size":10,"nullable":false}]}}
+```
+
+### 8. get_table_ddl
+
+获取指定表的完整 CREATE TABLE DDL 语句。
+
+**参数：**
+- `table` (string): 表名（必需）
+- `database` (string, 可选): 数据库名，如果不指定则使用当前连接的数据库
+
+**示例（使用当前数据库）：**
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_table_ddl","arguments":{"table":"sys_user"}}}
+```
+
+**示例（指定数据库）：**
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_table_ddl","arguments":{"table":"sys_user","database":"test"}}}
+```
+
+**响应：**
+```json
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"CREATE TABLE `sys_user` (\n  `user_id` bigint NOT NULL AUTO_INCREMENT,\n  `username` varchar(255) NOT NULL,\n  `email` varchar(255) NOT NULL,\n  PRIMARY KEY (`user_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"}],"ddl":"CREATE TABLE `sys_user` (\n  `user_id` bigint NOT NULL AUTO_INCREMENT,\n  `username` varchar(255) NOT NULL,\n  `email` varchar(255) NOT NULL,\n  PRIMARY KEY (`user_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;","table":"sys_user","database":"test"}}
 ```
 
 ## 日志配置
@@ -407,37 +278,22 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 ### 初始化连接
 
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "initialize",
-  "params": {
-    "protocolVersion": "2024-11-05",
-    "capabilities": {},
-    "clientInfo": {
-      "name": "test-client",
-      "version": "1.0.0"
-    }
-  }
-}
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}
 ```
 
 ### 获取工具列表
 
 ```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/list"
-}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
 ```
 
 ## 测试
 
-所有 7 个工具都已测试并验证可以正常工作：
+所有 8 个工具都已测试并验证可以正常工作：
 
-- ✅ `list_tables` - 成功列出所有数据库表
+- ✅ `list_tables` - 成功列出所有数据库表（支持指定数据库）
 - ✅ `describe_table` - 成功获取表结构
+- ✅ `get_table_ddl` - 成功获取表的完整 CREATE TABLE 语句
 - ✅ `execute_query` - 成功执行 SELECT 查询
 - ✅ `execute_update` - 成功执行 DDL/DML 语句
 - ✅ `insert_data` - 成功插入数据并返回生成的主键

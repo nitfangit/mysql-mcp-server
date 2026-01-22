@@ -4,6 +4,9 @@
       "command": "java",
       "args": [
         "-jar",
+        "-Dfile.encoding=UTF-8",
+        "-Duser.language=zh",
+        "-Duser.country=CN",
         "D:\\projects\\mysql-mcp\\target\\mysql-mcp-server-1.0.0.jar"
       ],
       "env": {

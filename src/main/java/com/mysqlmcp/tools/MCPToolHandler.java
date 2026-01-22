@@ -76,7 +76,8 @@ public class MCPToolHandler {
             "list_tables",
             "List all tables",
             "Get all table names in the database",
-            new String[]{}
+            new String[]{},
+            new String[]{"database"}
         ));
 
         // Describe table tool
@@ -87,6 +88,15 @@ public class MCPToolHandler {
             new String[]{"table"}
         ));
 
+        // Get table DDL tool
+        tools.add(createToolDefinition(
+            "get_table_ddl",
+            "Get table DDL",
+            "Get CREATE TABLE statement for specified table",
+            new String[]{"table"},
+            new String[]{"database"}
+        ));
+
         result.add("tools", tools);
         return result;
     }
@@ -95,6 +105,14 @@ public class MCPToolHandler {
      * 创建工具定义
      */
     private JsonObject createToolDefinition(String name, String description, String detailedDescription, String[] parameters) {
+        return createToolDefinition(name, description, detailedDescription, parameters, new String[]{});
+    }
+
+    /**
+     * 创建工具定义（支持可选参数）
+     */
+    private JsonObject createToolDefinition(String name, String description, String detailedDescription, 
+                                           String[] requiredParams, String[] optionalParams) {
         JsonObject tool = new JsonObject();
         tool.addProperty("name", name);
         tool.addProperty("description", description);
@@ -106,7 +124,8 @@ public class MCPToolHandler {
         JsonObject properties = new JsonObject();
         JsonArray required = new JsonArray();
         
-        for (String param : parameters) {
+        // 添加必需参数
+        for (String param : requiredParams) {
             JsonObject paramSchema = new JsonObject();
             switch (param) {
                 case "sql":
@@ -125,9 +144,25 @@ public class MCPToolHandler {
                     paramSchema.addProperty("type", "string");
                     paramSchema.addProperty("description", "WHERE condition (e.g., id=1)");
                     break;
+                case "database":
+                    paramSchema.addProperty("type", "string");
+                    paramSchema.addProperty("description", "Database name (optional, uses current database if not specified)");
+                    break;
             }
             properties.add(param, paramSchema);
             required.add(param);
+        }
+        
+        // 添加可选参数
+        for (String param : optionalParams) {
+            JsonObject paramSchema = new JsonObject();
+            switch (param) {
+                case "database":
+                    paramSchema.addProperty("type", "string");
+                    paramSchema.addProperty("description", "Database name (optional, uses current database if not specified)");
+                    break;
+            }
+            properties.add(param, paramSchema);
         }
         
         inputSchema.add("properties", properties);
@@ -158,6 +193,8 @@ public class MCPToolHandler {
                 return handleListTables(arguments);
             case "describe_table":
                 return handleDescribeTable(arguments);
+            case "get_table_ddl":
+                return handleGetTableDDL(arguments);
             default:
                 throw new IllegalArgumentException("Unknown tool: " + toolName);
         }
@@ -357,7 +394,8 @@ public class MCPToolHandler {
     }
 
     private JsonObject handleListTables(JsonObject arguments) throws SQLException {
-        List<String> tables = databaseManager.getTables();
+        String databaseName = arguments.has("database") ? arguments.get("database").getAsString() : null;
+        List<String> tables = databaseManager.getTables(databaseName);
         
         // 按照 MCP 协议规范，工具调用响应应该包含 content 数组
         JsonObject result = new JsonObject();
@@ -368,7 +406,8 @@ public class MCPToolHandler {
         textContent.addProperty("type", "text");
         
         // 将表列表格式化为文本
-        StringBuilder text = new StringBuilder("Database tables (" + tables.size() + "):\n");
+        String dbInfo = databaseName != null ? "Database '" + databaseName + "'" : "Current database";
+        StringBuilder text = new StringBuilder(dbInfo + " tables (" + tables.size() + "):\n");
         JsonArray tableArray = new JsonArray();
         for (String table : tables) {
             tableArray.add(table);
@@ -381,6 +420,9 @@ public class MCPToolHandler {
         // 同时保留原始数据格式以便兼容
         result.add("tables", tableArray);
         result.addProperty("count", tables.size());
+        if (databaseName != null) {
+            result.addProperty("database", databaseName);
+        }
         return result;
     }
 
@@ -433,6 +475,36 @@ public class MCPToolHandler {
         
         // 同时保留原始数据格式以便兼容
         result.add("columns", columnArray);
+        return result;
+    }
+
+    private JsonObject handleGetTableDDL(JsonObject arguments) throws SQLException {
+        if (!arguments.has("table")) {
+            throw new IllegalArgumentException("Missing parameter: table");
+        }
+        
+        String tableName = arguments.get("table").getAsString();
+        String databaseName = arguments.has("database") ? arguments.get("database").getAsString() : null;
+        
+        String ddl = databaseManager.getTableDDL(databaseName, tableName);
+        
+        JsonObject result = new JsonObject();
+        JsonArray content = new JsonArray();
+        
+        // 按照 MCP 协议规范，添加 content 数组
+        JsonObject textContent = new JsonObject();
+        textContent.addProperty("type", "text");
+        textContent.addProperty("text", ddl);
+        content.add(textContent);
+        result.add("content", content);
+        
+        // 同时保留原始数据格式以便兼容
+        result.addProperty("ddl", ddl);
+        result.addProperty("table", tableName);
+        if (databaseName != null) {
+            result.addProperty("database", databaseName);
+        }
+        
         return result;
     }
 

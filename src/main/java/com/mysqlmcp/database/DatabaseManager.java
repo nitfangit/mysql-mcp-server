@@ -115,11 +115,19 @@ public class DatabaseManager {
      * 获取数据库表列表
      */
     public List<String> getTables() throws SQLException {
-        logger.debug("Getting table list");
+        return getTables(null);
+    }
+
+    /**
+     * 获取指定数据库的表列表
+     * @param databaseName 数据库名，如果为 null 则使用当前连接的数据库
+     */
+    public List<String> getTables(String databaseName) throws SQLException {
+        logger.debug("Getting table list for database: {}", databaseName);
         List<String> tables = new ArrayList<>();
         
         try (Connection conn = getConnection();
-             ResultSet rs = conn.getMetaData().getTables(null, null, "%", new String[]{"TABLE"})) {
+             ResultSet rs = conn.getMetaData().getTables(databaseName, null, "%", new String[]{"TABLE"})) {
             while (rs.next()) {
                 tables.add(rs.getString("TABLE_NAME"));
             }
@@ -149,6 +157,46 @@ public class DatabaseManager {
         }
         
         return columns;
+    }
+
+    /**
+     * 获取表的 CREATE TABLE DDL 语句
+     * @param tableName 表名
+     * @return CREATE TABLE 语句
+     */
+    public String getTableDDL(String tableName) throws SQLException {
+        return getTableDDL(null, tableName);
+    }
+
+    /**
+     * 获取指定数据库的表的 CREATE TABLE DDL 语句
+     * @param databaseName 数据库名，如果为 null 则使用当前连接的数据库
+     * @param tableName 表名
+     * @return CREATE TABLE 语句
+     */
+    public String getTableDDL(String databaseName, String tableName) throws SQLException {
+        logger.debug("Getting DDL for table: {}.{}", databaseName, tableName);
+        
+        String sql;
+        if (databaseName != null && !databaseName.isEmpty()) {
+            sql = "SHOW CREATE TABLE `" + databaseName + "`.`" + tableName + "`";
+        } else {
+            sql = "SHOW CREATE TABLE `" + tableName + "`";
+        }
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                // SHOW CREATE TABLE 返回两列：Table 和 Create Table
+                // 第二列包含完整的 CREATE TABLE 语句
+                String ddl = rs.getString(2);
+                return ddl;
+            } else {
+                throw new SQLException("Table not found: " + (databaseName != null ? databaseName + "." : "") + tableName);
+            }
+        }
     }
 
     /**
