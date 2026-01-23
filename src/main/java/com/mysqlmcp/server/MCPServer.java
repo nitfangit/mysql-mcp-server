@@ -37,19 +37,7 @@ public class MCPServer {
         System.setProperty("user.language", "en");
         System.setProperty("user.country", "US");
         
-        // 配置 SLF4J Simple Logger（如果配置文件不存在时使用）
-        if (System.getProperty("org.slf4j.simpleLogger.defaultLogLevel") == null) {
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.showDateTime") == null) {
-            System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.dateTimeFormat") == null) {
-            System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss.SSS");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.showShortLogName") == null) {
-            System.setProperty("org.slf4j.simpleLogger.showShortLogName", "true");
-        }
+        // 日志配置由 logback.xml 管理，无需在此处设置
         
         MCPServer server = new MCPServer();
         server.start();

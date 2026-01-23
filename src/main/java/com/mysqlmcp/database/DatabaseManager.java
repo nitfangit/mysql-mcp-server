@@ -1,5 +1,6 @@
 package com.mysqlmcp.database;
 
+import cn.hutool.core.util.StrUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,12 +24,13 @@ public class DatabaseManager {
 
     public DatabaseManager() {
         // 从环境变量或系统属性读取配置
-        this.url = System.getProperty("mysql.url", 
-            System.getenv().getOrDefault("MYSQL_URL", "jdbc:mysql://localhost:3306/test"));
-        this.username = System.getProperty("mysql.username", 
-            System.getenv().getOrDefault("MYSQL_USERNAME", "root"));
-        this.password = System.getProperty("mysql.password", 
-            System.getenv().getOrDefault("MYSQL_PASSWORD", "root"));
+        this.url = System.getProperty("mysql.url", System.getenv().get("MYSQL_URL"));
+        this.username = System.getProperty("mysql.username", System.getenv().get("MYSQL_USERNAME"));
+        this.password = System.getProperty("mysql.password", System.getenv().get("MYSQL_PASSWORD"));
+
+        if (StrUtil.isEmpty(url) || StrUtil.isEmpty(username) || StrUtil.isEmpty(password)) {
+            throw new RuntimeException("数据库参数缺失");
+        }
     }
 
     public DatabaseManager(String url, String username, String password) {

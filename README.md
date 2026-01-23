@@ -256,15 +256,24 @@ mvn exec:java -Dexec.mainClass="com.mysqlmcp.server.MCPServer"
 
 ## 日志配置
 
-服务器使用 SLF4J Simple Logger 进行日志记录。可以通过 `src/main/resources/simplelogger.properties` 自定义日志配置。
+服务器使用 **Logback** 进行日志记录，支持文件和控制台双重输出。可以通过 `src/main/resources/logback.xml` 自定义日志配置。
 
 **默认日志配置：**
 - 日志级别：INFO
-- 输出位置：stderr（MCP协议要求）
+- 输出位置：
+  - **控制台（stderr）**：符合MCP协议要求
+  - **日志文件**：`logs/mysql-mcp-server.log`
+  - **错误日志文件**：`logs/mysql-mcp-server-error.log`
 - 格式：`yyyy-MM-dd HH:mm:ss.SSS [LEVEL] ClassName - Message`
-- 所有日志消息都带有 `[LOG-INFO]` 前缀以便识别
+- 日志文件特性：
+  - 按日期和大小滚动（单个文件最大10MB）
+  - 保留30天历史日志
+  - 总大小限制1GB
 
-**注意**：在 Cursor 中，stderr 输出会被标记为 `[error]`，但这只是一个显示标记。实际的日志级别（INFO、DEBUG、ERROR）会在日志消息中显示。
+**注意**：
+- 在 Cursor 中，stderr 输出会被标记为 `[error]`，但这只是一个显示标记。实际的日志级别（INFO、DEBUG、ERROR）会在日志消息中显示。
+- 日志文件会自动创建在项目根目录的 `logs` 文件夹中。
+- 详细配置说明请参考 [LOGGING.md](LOGGING.md)
 
 ## 编码
 
